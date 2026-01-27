@@ -33,7 +33,9 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
 
     # local apps
-    'users'
+    'users',
+    'events',
+    'registration'
 ]
 
 MIDDLEWARE = [

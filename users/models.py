@@ -5,4 +5,4 @@ class User(AbstractUser):
     phone = models.CharField(max_length=15, blank=True, null=True)
 
     def __str__(self):
-        return self.username
+        return f'{self.id}|{self.username}'
