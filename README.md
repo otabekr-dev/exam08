@@ -203,3 +203,197 @@ Talaba quyidagilarni topshirishi shart:
    * AWS EC2 instance
    * Nginx configuration
    * systemd service status
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# EventPulse - Tadbirlarni Boshqarish Tizimi
+
+## 📌 Loyiha Haqida
+
+EventPulse - bu online va offline tadbirlarni boshqarish uchun mo'ljallangan Django REST Framework asosidagi backend servis. Loyiha AWS EC2 serverida production muhitida deploy qilingan.
+
+Asosiy funksiyalar:
+- Foydalanuvchi autentifikatsiyasi (ro'yxatdan o'tish va kirish)
+- Online va offline tadbirlarni yaratish va boshqarish
+- Tadbirlarga ro'yxatdan o'tish va bekor qilish tizimi
+- Tadbir sig'imi (capacity) boshqaruvi
+- Tadbir statistikasi va hisobotlar
+
+---
+
+## 🌐 Jonli Server
+
+Server URL: http://13.62.52.209
+
+Admin Panel: http://13.62.52.209/admin/
+
+---
+
+## 🛠️ Texnologiyalar
+
+### Backend
+- Framework: Django 
+- API: Django REST Framework
+- Ma'lumotlar bazasi: PostgreSQL
+- Autentifikatsiya: Token-based (DRF Token)
+
+### Server Infratuzilmasi
+- Cloud Platform: AWS EC2
+- Operatsion Tizim: Ubuntu 22.04 LTS
+- Application Server: Gunicorn
+- Reverse Proxy: Nginx
+- Process Manager: systemd
+
+---
+
+## 📡 API Endpointlar
+
+### 1. Autentifikatsiya (Authentication)
+
+#### Ro'yxatdan O'tish
+POST /auth/register/
+
+Request Body:
+{
+  "username": "foydalanuvchi",
+  "email": "email@example.com",
+  "password": "parol"
+}
+
+#### Tizimga Kirish
+POST /auth/login/
+
+Request Body:
+{
+  "username": "foydalanuvchi",
+  "password": "parol"
+}
+
+Response:
+{
+  "token": "your-auth-token-here"
+}
+
+---
+
+### 2. Tadbirlar (Events)
+
+#### Tadbir Yaratish
+POST /events/create/
+Headers: Authorization: Token <your-token>
+
+Request Body:
+{
+  "title": "Tech Conference 2026",
+  "description": "Yillik texnologiya konferensiyasi",
+  "event_type": "ONLINE",
+  "location": null,
+  "start_time": "2026-03-15T10:00:00Z",
+  "end_time": "2026-03-15T18:00:00Z",
+  "capacity": 100
+}
+
+Qoidalar:
+- event_type: "ONLINE" yoki "OFFLINE"
+- location: Faqat OFFLINE tadbirlar uchun majburiy
+- capacity: Tadbir sig'imi (0 dan katta)
+- end_time > start_time bo'lishi shart
+
+#### Tadbirga Ro'yxatdan O'tish
+POST /events/register/
+Headers: Authorization: Token <your-token>
+
+Request Body:
+{
+  "event_id": 1
+}
+
+Biznes logika:
+- Har bir foydalanuvchi bitta tadbirga faqat 1 marta ro'yxatdan o'ta oladi
+- Tadbir sig'imi to'lgan bo'lsa (capacity = 0), yangi ro'yxatdan o'tish rad etiladi
+- Muvaffaqiyatli ro'yxatdan o'tgandan keyin capacity 1 ga kamayadi
+
+#### Ro'yxatdan O'tishni Bekor Qilish
+POST /events/register/cancel/<registration_id>
+Headers: Authorization: Token <your-token>
+
+Natija:
+- Ro'yxatdan o'tish bekor qilinadi
+- Tadbir capacity 1 ga ortadi
+
+#### Tadbir Statistikasi
+GET /events/stats/
+Headers: Authorization: Token <your-token>
+
+Response:
+{
+  "total_events": 10,
+  "total_registrations": 45,
+  "top_events": [
+    {
+      "id": 1,
+      "title": "Tech Conference 2026",
+      "registration_count": 85,
+      "available_spots": 15
+    }
+  ]
+}
+
+---
+
+## 🚀 Deployment Jarayoni (Qisqacha)
+
+### 1. Server Tayyorlash
+# AWS EC2 Ubuntu 22.04 instance yaratish
+# SSH orqali serverga ulanish
+ssh -i keypair.pem ubuntu@server-ip
+
+### 2. Zarur Paketlarni O'rnatish
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y python3 python3-venv python3-dev postgresql \
+    postgresql-contrib libpq-dev nginx git build-essential
+
+### 3. PostgreSQL Sozlash
+sudo -u postgres psql
+CREATE DATABASE event;
+CREATE USER dbuser WITH PASSWORD 'secure_password';
+GRANT ALL PRIVILEGES ON DATABASE event TO dbuser;
+
+### 4. Loyihani Deploy Qilish
+# Loyihani klonlash
+git clone <repository-url> exam08
+cd exam08
+
+# Virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Dependencies
+pip install -r requirements.txt
+pip install gunicorn
+
+# .env fayl yaratish (environment variables)
+# Migration
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py collectstatic
+
+### 5. Gunicorn Service
+```bash
+# /etc/systemd/system/gunicorn.service yaratish
+sudo systemctl
